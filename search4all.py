@@ -43,7 +43,6 @@ SEARCHAPI_SEARCH_ENDPOINT = "https://www.searchapi.io/api/v1/search"
 SEARCH1API_SEARCH_ENDPOINT = "https://search.search2ai.one/"
 
 
-
 # Specify the number of references from the search engine you want to use.
 # 8 is usually a good number.
 REFERENCE_COUNT = 8
@@ -63,7 +62,8 @@ _default_query = "Who said 'live long and prosper'?"
 # to the model on how to generate the answer. Of course, different models may
 # behave differently, and we haven't tuned the prompt to make it optimal - this
 # is left to you, application creators, as an open problem.
-_rag_query_text = """
+# You can customize this by setting env SYSTEM_PROMPT, please make sure it has {context} in it.
+_default_rag_query_text = """
 You are a large language AI assistant built by AI. You are given a user question, and please write clean, concise and accurate answer to the question. You will be given a set of related contexts to the question, each starting with a reference number like [[citation:x]], where x is a number. Please use the context and cite the context at the end of each sentence if applicable.
 
 Your answer must be correct, accurate and written by an expert using an unbiased and professional tone. Please limit to 1024 tokens. Do not give any information that is not related to the question, and do not repeat. Say "information is missing on" followed by the related topic, if the given context do not provide sufficient information.
@@ -75,6 +75,18 @@ Here are the set of contexts:
 {context}
 
 Remember, don't blindly repeat the contexts verbatim. And here is the user question:
+"""
+
+# This is default prompt template for generating related and further questions. You can customize this by setting env RELATED_QUESTIONS_SYSTEM_PROMPT
+# please make sure it has {context} in it.
+_default_related_questions_query_text = r"""
+You are a helpful assistant that helps the user to ask related questions, based on user's original question and the related contexts. Please identify worthwhile topics that can be follow-ups, and write questions no longer than 20 words each. Please make sure that specifics, like events, names, locations, are included in follow up questions so they can be asked standalone. For example, if the original question asks about "the Manhattan project", in the follow up question, do not just say "the project", but use the full name "the Manhattan project". Your related questions must be in the same language as the original question.
+
+Here are the contexts of the question:
+
+{context}
+
+Remember, based on the original question and related contexts, suggest three such further questions. Do NOT repeat the original question. Each related question should be no longer than 20 words. Here is the original question:
 """
 
 # A set of stop words to use - this is not a complete set, and you may want to
@@ -113,7 +125,7 @@ class KVWrapper(object):
     def put(self, key: str, value: str):
         self._db[key] = value
         self._db.commit()
-    
+
     def append(self, key: str, value):
         """ 记录聊天历史 """
         self._db[key] = self._db.get(key, [])
@@ -127,10 +139,10 @@ class KVWrapper(object):
 def extract_all_sections(text: str):
     # 定义正则表达式模式以匹配各部分
     sections_pattern = r"(.*?)__LLM_RESPONSE__(.*?)(__RELATED_QUESTIONS__(.*))?$"
-    
+
     # 使用正则表达式查找各部分内容
     match = re.search(sections_pattern, text, re.DOTALL)
-    
+
     # 从匹配结果中提取文本，如果没有匹配则返回None
     if match:
         search_results = match.group(1).strip()  # 前置文本作为搜索结果
@@ -138,7 +150,7 @@ def extract_all_sections(text: str):
         related_questions = match.group(4).strip() if match.group(4) else ""  # 相关问题文本，如果不存在则返回空字符串
     else:
         search_results, llm_response, related_questions = None, None, None
-    
+
     return search_results, llm_response, related_questions
 
 def search_with_search1api(query: str, search1api_key: str):
@@ -148,7 +160,7 @@ def search_with_search1api(query: str, search1api_key: str):
     payload = {
         "max_results": 10,
         "query": query
-    }   
+    }
     headers = {
     "Authorization": f"Bearer {search1api_key}",
     "Content-Type": "application/json"
@@ -395,7 +407,7 @@ def extract_url_content(url):
 
 
 def search_with_searXNG(query:str,url:str):
- 
+
     content_list = []
 
     try:
@@ -432,7 +444,7 @@ def search_with_searXNG(query:str,url:str):
             results = []
             futures = []
 
-            # executor = ThreadPoolExecutor(max_workers=10) 
+            # executor = ThreadPoolExecutor(max_workers=10)
             # for url in pedding_urls:
             #     futures.append(executor.submit(extract_url_content,url))
             # try:
@@ -445,7 +457,7 @@ def search_with_searXNG(query:str,url:str):
             # logger.info(results)
             # for content in results:
             #     if content and content.get('content'):
-                    
+
             #         item_dict = {
             #             "url":content.get('url'),
             #             "name":content.get('url'),
@@ -526,7 +538,7 @@ async def server_init(_app):
     elif _app.ctx.backend == "SEARXNG":
         logger.info(os.getenv("SEARXNG_BASE_URL"))
         _app.ctx.search_function = lambda query: search_with_searXNG(
-            query, 
+            query,
             os.getenv("SEARXNG_BASE_URL"),
         )
     else:
@@ -556,17 +568,9 @@ async def get_related_questions(_app, query, contexts):
     """
     Gets related questions based on the query and context.
     """
-    _more_questions_prompt = r"""
-    You are a helpful assistant that helps the user to ask related questions, based on user's original question and the related contexts. Please identify worthwhile topics that can be follow-ups, and write questions no longer than 20 words each. Please make sure that specifics, like events, names, locations, are included in follow up questions so they can be asked standalone. For example, if the original question asks about "the Manhattan project", in the follow up question, do not just say "the project", but use the full name "the Manhattan project". Your related questions must be in the same language as the original question.
-
-    Here are the contexts of the question:
-
-    {context}
-
-    Remember, based on the original question and related contexts, suggest three such further questions. Do NOT repeat the original question. Each related question should be no longer than 20 words. Here is the original question:
-    """.format(
-        context="\n\n".join([c["snippet"] for c in contexts])
-    )
+    _more_questions_prompt = os.environ.get(
+        "RELATED_QUESTIONS_SYSTEM_PROMPT", _default_related_questions_query_text
+    ).format(context="\n\n".join([c["snippet"] for c in contexts]))
 
     try:
         logger.info('Start getting related questions')
@@ -590,14 +594,14 @@ async def get_related_questions(_app, query, contexts):
                         },
                         "required": ["questions"]
                     }
-                    
+
                 }
             ]
             response = await client.beta.tools.messages.create(
                 model=_app.ctx.model,
                 system=_more_questions_prompt,
                 max_tokens=1000,
-                tools=tools,  
+                tools=tools,
                 messages=[
                 {"role": "user", "content": query},
             ]
@@ -612,7 +616,7 @@ async def get_related_questions(_app, query, contexts):
                         break
             else:
                 related = []
-            
+
             if related and isinstance(related, str):
                 try:
                     related = json.loads(related)
@@ -620,7 +624,7 @@ async def get_related_questions(_app, query, contexts):
                     logger.error("Failed to parse related questions as JSON")
                     return []
             logger.info('Successfully got related questions')
-            return [{"question": question} for question in related[:5]] 
+            return [{"question": question} for question in related[:5]]
         else:
             logger.info('Using OpenAI model')
             openai_client = new_async_client(_app)
@@ -660,46 +664,46 @@ async def get_related_questions(_app, query, contexts):
                 "function": {
                     "name": "ask_related_questions"
                 }
-                },        
+                },
             }
             try:
                 llm_response = await openai_client.chat.completions.create(**request_body)
-                logger.info(f"OpenAI response: {llm_response}") 
-                
+                logger.info(f"OpenAI response: {llm_response}")
+
                 if llm_response.choices and llm_response.choices[0].message:
                     message = llm_response.choices[0].message
-                    
+
                     if message.tool_calls:
                         related = message.tool_calls[0].function.arguments
                         if isinstance(related, str):
                             related = json.loads(related)
                         logger.trace(f"Related questions: {related}")
                         return [{"question": question} for question in related["questions"][:5]]
-                    
+
                     elif message.content:
                         # 如果不存在 tool_calls 字段,但存在 content 字段,从 content 中提取相关问题
                         content = message.content
                         related_questions = content.split('\n')
                         related_questions = [q.strip() for q in related_questions if q.strip()]
-                        
+
                         # 提取带有序号的问题
                         cleaned_questions = []
                         for question in related_questions:
                             if question.startswith('1.') or question.startswith('2.') or question.startswith('3.'):
                                 question = question[3:].strip()  # 去除问题编号和空格
-                                
+
                                 if question.startswith('"') and question.endswith('"'):
                                     question = question[1:-1]  # 去除首尾的双引号
                                 elif question.startswith('"'):
                                     question = question[1:]  # 去除开头的双引号
                                 elif question.endswith('"'):
                                     question = question[:-1]  # 去除结尾的双引号
-                                
+
                                 cleaned_questions.append(question)
-                        
+
                         logger.trace(f"Related questions: {cleaned_questions}")
                         return [{"question": question} for question in cleaned_questions[:5]]
-                
+
             except Exception as e:
                     logger.error(f"Error occurred while sending request to OpenAI model: {str(e)}")
                     return []
@@ -726,7 +730,7 @@ async def _raw_stream_response(
             "(The search engine returned nothing for this query. Please take the"
             " answer with a grain of salt.)\n\n"
         )
-    
+
     if "claude-3" in _app.ctx.model.lower():
         # Process Claude's stream response
         async for text in llm_response:
@@ -785,11 +789,11 @@ async def query_function(request: sanic.Request):
     generate_related_questions = params.get("generate_related_questions", True)
     if not query:
         raise HTTPException("query must be provided.")
-    
+
     # 定义传递给生成答案的聊天历史 以及搜索结果
     chat_history = []
     contexts = ""
-    
+
     # Note that, if uuid exists, we don't check if the stored query is the same
     # as the current query, and simply return the stored result. This is to enable
     # the user to share a searched link to others and have others see the same result.
@@ -873,6 +877,7 @@ async def query_function(request: sanic.Request):
             _app.ctx.executor, _app.ctx.search_function, query
         )
 
+    _rag_query_text = os.getenv("SYSTEM_PROMPT", _default_rag_query_text)
     system_prompt = _rag_query_text.format(
         context="\n\n".join(
             [f"[[citation:{i+1}]] {c['snippet']}" for i, c in enumerate(contexts)]
@@ -936,7 +941,7 @@ async def query_function(request: sanic.Request):
                     all_yielded_results.append(result)
                 except Exception as e:
                     logger.error(f"Error during related questions generation: {e}")
-            
+
         else:
             logger.info("Using OpenAI for generating LLM response")
             openai_client = new_async_client(_app)
@@ -963,7 +968,7 @@ async def query_function(request: sanic.Request):
             ):
                 all_yielded_results.append(result)
                 await response.send(result)
-            logger.info("Finished streaming LLM response")            
+            logger.info("Finished streaming LLM response")
 
     except Exception as e:
         logger.error(f"encountered error: {e}\n{traceback.format_exc()}")

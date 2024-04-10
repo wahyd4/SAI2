@@ -92,19 +92,21 @@ This project provides some additional configuration items set with environment v
 | `OPENAI_BASE_URL`   | No       | If you manually configure the OpenAI interface proxy, you can use this configuration item to override the default OpenAI API request base URL                             | OpenAI: `https://api.openai.com/v1`<br/>Groq: `https://api.groq.com/openai/v1` |                                                           |
 | `GROQ_API_KEY`     | No      | This is the API key you apply on the Groq account page                                                                                                                  | `gsk_xxxxxx...xxxxxx`                                                                                                 |
 | `ANTHROPIC_API_KEY`     | No      | This is the API key you apply on the Claude account page                                                                                                                  | `sk-ant-xxxxxx...xxxxxx`                                                                                                 |
-| `LLM_MODEL`      | Yes       | The model you want to use,support all chat models of openai, groq and claude. | `gpt-3.5-turbo-0125,mixtral-8x7b-32768,claude-3-haiku-20240307...`   
-| `RELATED_QUESTIONS`      | No       | Show the related questions. | `1`   
-| `NODE_ENV`      | No       | The environment required for deployment is necessary only during manual deployment. | `production`   
-| `BACKEND`      | Yes       | The search service you want. | `SEARCH1API,BING,GOOGLE,SERPER,SEARCHAPI,SEARXNG`   
-| `CHAT_HISTORY`      | No       | Continue to ask about the results | `1`   
-| `SEARCH1API_KEY`      | Yes       | If you choose SEARCH1API. | `xxx`   
-| `BING_SEARCH_V7_SUBSCRIPTION_KEY`      | No       | If you choose BING. | `xxx`   
-| `GOOGLE_SEARCH_CX`      | No       | If you choose GOOGLE. | `xxxx`   
-| `GOOGLE_SEARCH_API_KEY`      | No       | If you choose GOOGLE. | `xxx`   
-| `SEARCHAPI_API_KEY`      | No       | If you choose SEARCHAPI. | `xxx`   
+| `LLM_MODEL`      | Yes       | The model you want to use,support all chat models of openai, groq and claude. | `gpt-3.5-turbo-0125,mixtral-8x7b-32768,claude-3-haiku-20240307...`
+| `RELATED_QUESTIONS`      | No       | Show the related questions. | `1`
+| `NODE_ENV`      | No       | The environment required for deployment is necessary only during manual deployment. | `production`
+| `BACKEND`      | Yes       | The search service you want. | `SEARCH1API,BING,GOOGLE,SERPER,SEARCHAPI,SEARXNG`
+| `CHAT_HISTORY`      | No       | Continue to ask about the results | `1`
+| `SEARCH1API_KEY`      | Yes       | If you choose SEARCH1API. | `xxx`
+| `BING_SEARCH_V7_SUBSCRIPTION_KEY`      | No       | If you choose BING. | `xxx`
+| `GOOGLE_SEARCH_CX`      | No       | If you choose GOOGLE. | `xxxx`
+| `GOOGLE_SEARCH_API_KEY`      | No       | If you choose GOOGLE. | `xxx`
+| `SEARCHAPI_API_KEY`      | No       | If you choose SEARCHAPI. | `xxx`
 | `SERPER_SEARCH_API_KEY`      | No       | If you choose SERPER. | `xxx`
 | `NEXT_PUBLIC_GOOGLE_ANALYTICS`      | No       | You can use Google Analytics to know how many users you have on your website. | MEASUREMENT ID,you can find on your google analytics account,like `G-XXXXXX`
 | `SEARXNG_BASE_URL` | No       | the hosted serxng server address. it is required when the BACKEND is `SEARXNG` | `https://serxng.xxx.com/`
+| `SYSTEM_PROMPT` | No       | The default system prompt used to ask initial question | Check `_default_rag_query_text` variable in `search4all.py`
+| `RELATED_QUESTIONS_SYSTEM_PROMPT` | No       | The default prompt used to generate further questions  | Check `_default_related_questions_query_text` variable in `search4all.py`
 
 
 
