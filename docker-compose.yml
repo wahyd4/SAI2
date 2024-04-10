@@ -15,5 +15,5 @@ services:
       BACKEND: SEARCH1API
       # Set your search key from your provider here
       SEARCH1API_KEY: xxxx
-      # SYSTEM_PROMPT: "You are a trustworthy and experienced AI assistant, please always use Chinese to answer the following questions with a bullet list: {Context}"
-      # RELATED_QUESTIONS_SYSTEM_PROMPT: "xxx {Context} xxx"
+      # SYSTEM_PROMPT: "You are a trustworthy and experienced AI assistant, please always use Chinese to answer the following questions with a bullet list: {context}"
+      # RELATED_QUESTIONS_SYSTEM_PROMPT: "xxx {context} xxx"
