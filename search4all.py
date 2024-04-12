@@ -9,7 +9,7 @@ from typing import AsyncGenerator
 from openai import AsyncOpenAI
 import asyncio
 from anthropic import AsyncAnthropic
-from loguru import logger
+from sanic.log import logger
 from dotenv import load_dotenv
 import urllib.parse
 import trafilatura
@@ -54,6 +54,17 @@ DEFAULT_SEARCH_ENGINE_TIMEOUT = 5
 # 默认记录的对话历史长度
 MAX_HISTORY_LEN = 10
 
+# How many results do we use from SearXNG
+MAX_SEARCH_RESULTS = 10
+
+# Time out for getting content from SearXNG results URLs
+SEARXNG_URL_CONTENT_TIMEOUT = 7
+
+# Max System prompt length
+MAX_SYSTEM_PROMPT_LEN = 5000
+
+# If to enable scraping search results URLs
+ENABLE_URL_SCRAPING = False
 
 # If the user did not provide a query, we will use this default query.
 _default_query = "Who said 'live long and prosper'?"
@@ -397,14 +408,12 @@ def search_with_searchapi(query: str, subscription_key: str):
 
 
 def extract_url_content(url):
-    logger.info(url)
+    logger.info(f"Getting content of: {url}")
     downloaded = trafilatura.fetch_url(url)
     content =  trafilatura.extract(downloaded)
 
-    logger.info(url +"______"+  content)
+    logger.debug(f"url: ${url} with content: {content}")
     return {"url":url, "content":content}
-
-
 
 def search_with_searXNG(query:str,url:str):
 
@@ -412,7 +421,7 @@ def search_with_searXNG(query:str,url:str):
 
     try:
         safe_string = urllib.parse.quote_plus(":auto " + query)
-        response = requests.get(url+'?q=' + safe_string + '&category=general&format=json&engines=bing%2Cgoogle')
+        response = requests.get(url+'?q=' + safe_string + '&category=general&format=json&engines=bing%2Cgoogle%2Cbrave%2Cduckduckgo')
         response.raise_for_status()
         search_results = response.json()
 
@@ -421,7 +430,7 @@ def search_with_searXNG(query:str,url:str):
         conv_links = []
 
         if search_results.get('results'):
-            for item in search_results.get('results')[0:9]:
+            for item in search_results.get('results')[0:MAX_SEARCH_RESULTS]:
                 name = item.get('title')
                 snippet = item.get('content')
                 url = item.get('url')
@@ -441,33 +450,35 @@ def search_with_searXNG(query:str,url:str):
                     'url':url,
                     'snippet':snippet
                 })
+
             results = []
             futures = []
+            if ENABLE_URL_SCRAPING:
+                logger.info("Start extracting content from urls")
+                executor = ThreadPoolExecutor(max_workers=10)
+                for url in pedding_urls:
+                    futures.append(executor.submit(extract_url_content,url))
 
-            # executor = ThreadPoolExecutor(max_workers=10)
-            # for url in pedding_urls:
-            #     futures.append(executor.submit(extract_url_content,url))
-            # try:
-            #     for future in futures:
-            #         res = future.result(timeout=5)
-            #         results.append(res)
-            # except concurrent.futures.TimeoutError:
-            #     logger.error("任务执行超时")
-            #     executor.shutdown(wait=False,cancel_futures=True)
-            # logger.info(results)
-            # for content in results:
-            #     if content and content.get('content'):
+                try:
+                    for future in futures:
+                        res = future.result(timeout=SEARXNG_URL_CONTENT_TIMEOUT)
+                        results.append(res)
+                except concurrent.futures.TimeoutError as e:
+                    logger.error(f"extract_url_content task timeout: {e}")
+                    executor.shutdown(wait=False,cancel_futures=True)
 
-            #         item_dict = {
-            #             "url":content.get('url'),
-            #             "name":content.get('url'),
-            #             "snippet":content.get('content'),
-            #             "content": content.get('content'),
-            #             "length":len(content.get('content'))
-            #         }
-            #         content_list.append(item_dict)
-            #     logger.info("URL: {}".format(url))
-            #     logger.info("=================")
+
+                for content in results:
+                    if content and content.get('content'):
+                        item_dict = {
+                            "url":content.get('url'),
+                            "name":content.get('url'),
+                            "snippet":content.get('content'),
+                            "content": content.get('content'),
+                            "length":len(content.get('content'))
+                        }
+                        content_list.append(item_dict)
+
         if len(results)== 0 :
             content_list = conv_links
         return  content_list
@@ -677,7 +688,7 @@ async def get_related_questions(_app, query, contexts):
                         related = message.tool_calls[0].function.arguments
                         if isinstance(related, str):
                             related = json.loads(related)
-                        logger.trace(f"Related questions: {related}")
+                        logger.info(f"Related questions: {related}")
                         return [{"question": question} for question in related["questions"][:5]]
 
                     elif message.content:
@@ -701,7 +712,7 @@ async def get_related_questions(_app, query, contexts):
 
                                 cleaned_questions.append(question)
 
-                        logger.trace(f"Related questions: {cleaned_questions}")
+                        logger.info(f"Related questions: {cleaned_questions}")
                         return [{"question": question} for question in cleaned_questions[:5]]
 
             except Exception as e:
@@ -878,11 +889,14 @@ async def query_function(request: sanic.Request):
         )
 
     _rag_query_text = os.getenv("SYSTEM_PROMPT", _default_rag_query_text)
+
+    # Only keep first 1000
     system_prompt = _rag_query_text.format(
         context="\n\n".join(
             [f"[[citation:{i+1}]] {c['snippet']}" for i, c in enumerate(contexts)]
         )
-    )
+    )[:MAX_SYSTEM_PROMPT_LEN]
+
     try:
         if _app.ctx.should_do_related_questions and generate_related_questions:
             # While the answer is being generated, we can start generating
@@ -943,7 +957,9 @@ async def query_function(request: sanic.Request):
                     logger.error(f"Error during related questions generation: {e}")
 
         else:
-            logger.info("Using OpenAI for generating LLM response")
+            logger.info(f"Using OpenAI for generating LLM response for query: {query}")
+            logger.info(f"system prompt: {system_prompt[:1000]}")
+
             openai_client = new_async_client(_app)
             messages=[
                     {"role": "system", "content": system_prompt},
@@ -968,7 +984,7 @@ async def query_function(request: sanic.Request):
             ):
                 all_yielded_results.append(result)
                 await response.send(result)
-            logger.info("Finished streaming LLM response")
+            logger.info(f"Finished streaming LLM response for query: {query}")
 
     except Exception as e:
         logger.error(f"encountered error: {e}\n{traceback.format_exc()}")
