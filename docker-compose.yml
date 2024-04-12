@@ -2,18 +2,24 @@ version: '3.4'
 
 services:
   search4all:
-    image: docker.io/fatwang2/search4all
+    image: test
     restart: unless-stopped
     ports:
       - 8800:8800
     environment:
-      OPENAI_API_KEY: sk-xxx
-      OPENAI_BASE_URL: https://api.openai.com/v1
+      OPENAI_API_KEY: "NothingFreeChatGPT!"
+      OPENAI_BASE_URL: https://nothing-free-chatgpt.junv.cc/v1
       LLM_MODEL: gpt-3.5-turbo-0125
       RELATED_QUESTIONS: 1
       # Change your search provider name here, if use another different provider
-      BACKEND: SEARCH1API
+      BACKEND: SEARXNG
+      SEARXNG_BASE_URL: https://sear.junv.cc/
       # Set your search key from your provider here
       SEARCH1API_KEY: xxxx
-      # SYSTEM_PROMPT: "You are a trustworthy and experienced AI assistant, please always use Chinese to answer the following questions with a bullet list: {context}"
+      SYSTEM_PROMPT: |-
+        You are a large language AI assistant built by AI. You are given a user question, and please write clean, concise and accurate answer to the question. You will be given a set of related contexts to the question, each starting with a reference number like [[citation:x]], where x is a number. Please use the context and cite the context at the end of each sentence if applicable.
+        Please cite the contexts with the reference numbers, in the format [citation:x]. If a sentence comes from multiple contexts, please list all applicable citations, like [citation:3][citation:5].
+        Other than code and specific names and citations, your answer must be written in the same language as the question.
+        {context}
+        Remember, don't blindly repeat the contexts verbatim and use the exact language that I ask the question to answer And here is the user question:
       # RELATED_QUESTIONS_SYSTEM_PROMPT: "xxx {context} xxx"
