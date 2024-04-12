@@ -13,7 +13,7 @@ services:
       RELATED_QUESTIONS: 1
       # Change your search provider name here, if use another different provider
       BACKEND: SEARXNG
-      SEARXNG_BASE_URL: https://sear.junv.cc/
+      SEARXNG_BASE_URL:
       # Set your search key from your provider here
       SEARCH1API_KEY: xxxx
       SYSTEM_PROMPT: |-
