@@ -2,13 +2,13 @@ version: '3.4'
 
 services:
   search4all:
-    image: test
+    image: docker.io/fatwang2/search4all
     restart: unless-stopped
     ports:
       - 8800:8800
     environment:
       OPENAI_API_KEY: ""
-      OPENAI_BASE_URL: https://nothing-free-chatgpt.junv.cc/v1
+      OPENAI_BASE_URL: ""
       LLM_MODEL: gpt-3.5-turbo-0125
       RELATED_QUESTIONS: 1
       # Change your search provider name here, if use another different provider
