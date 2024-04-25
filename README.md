@@ -1,17 +1,11 @@
 <div align="center">
-<h1 align="center">Search4All</h1>
+  
+<h1 align="center">🚧👷‍♂️🛠️[WORK IN PROGRESS] SAI2</h1>
 The opensource AI search platform
 <br/>
-<a href="https://search2ai.online/website" target="_blank"> Live Demo </a>
 <br/>
 <img width="70%" src="https://github.com/leptonai/search_with_lepton/assets/1506722/845d7057-02cd-404e-bbc7-60f4bae89680">
 </div>
-
-## About me
-[X](https://sum4all.site/twitter)\
-[telegram](https://sum4all.site/telegram)
-
-<a href="https://www.buymeacoffee.com/fatwang2" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 ## Features
 - Integrated support for LLMs, such as OpenAI, Groq, and Claude.
