@@ -50,4 +50,4 @@ ENV SEARCH1API_KEY=""
 EXPOSE 8800
 
 # Start command
-CMD ["python", "search4all.py"]
+CMD ["python", "server.py"]
