@@ -1,5 +1,6 @@
 "use client";
 import { Answer } from "@/app/components/answer";
+import { Home } from "lucide-react";
 import { Relates } from "@/app/components/relates";
 import { Sources } from "@/app/components/sources";
 import { Relate } from "@/app/interfaces/relate";
@@ -40,6 +41,18 @@ export const Result: FC<{ query: string; rid: string }> = ({ query, rid }) => {
           <div className="p-4 bg-white shadow-2xl rounded text-blue-500 font-medium flex gap-4">
             <Annoyed></Annoyed>
             {error === 429 ? Locale.Err[429] : Locale.Err[500]}
+          </div>
+          <div className="p-4 bg-white shadow-2xl rounded text-blue-500 font-medium flex gap-4">
+            <button
+              onClick={() => {
+                window.location.href = window.location.origin;
+              }}
+              type="button"
+              className="rounded flex gap-2 items-center bg-transparent px-2 py-1 text-xs font-semibold text-blue-500 hover:bg-zinc-100"
+            >
+              <Home size={16}></Home>
+              {Locale.Title.home}
+            </button>
           </div>
         </div>
       )}

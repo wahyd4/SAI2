@@ -383,7 +383,7 @@ async def get_related_questions(_app, query, contexts):
     """
     _more_questions_prompt = os.environ.get(
         "RELATED_QUESTIONS_SYSTEM_PROMPT", _default_related_questions_query_text
-    ).format(context="\n\n".join([c["snippet"] for c in contexts]))
+    ).format(context="\n\n".join([c["snippet"] for c in contexts if c["snippet"]]))
 
     try:
         logger.info("Start getting related questions")

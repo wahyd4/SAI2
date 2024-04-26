@@ -21,7 +21,7 @@ export const Title = ({ query }: { query: string }) => {
           type="button"
           className="rounded flex gap-2 items-center bg-transparent px-2 py-1 text-xs font-semibold text-blue-500 hover:bg-zinc-100"
         >
-          <Home size={12}></Home>
+          <Home size={16}></Home>
           {Locale.Title.home}
         </button>
       </div>

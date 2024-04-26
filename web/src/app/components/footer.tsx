@@ -20,15 +20,9 @@ export const Footer: FC = () => {
       <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-2 mt-2 text-zinc-400">
         <a
           className="hover:text-zinc-950"
-          href="https://github.com/fatwang2/search4all"
+          href="https://github.com/wahyd4/sai2"
         >
           Github
-        </a>
-        <a
-          className="hover:text-zinc-950"
-          href="https://twitter.com/fatwang2ai"
-        >
-          Twitter
         </a>
       </div>
     </div>
