@@ -79,7 +79,7 @@ _default_query = "Who said 'live long and prosper'?"
 # is left to you, application creators, as an open problem.
 # You can customize this by setting env SYSTEM_PROMPT, please make sure it has {context} in it.
 _default_rag_query_text = """
-You are a large language AI assistant built by AI. You must answer the question in the same language as the question itself. You are given a user question, and please write clean, concise and accurate answer to the question. You will be given a set of related contexts to the question, each starting with a reference number like [[citation:x]], where x is a number. Please use the context and cite the context at the end of each sentence if applicable.
+You are professional and trustworthy assistant. You must answer the question in the same language as the question itself. You are given a user question and please write clean, concise and accurate answer to the question. You will be given a set of related contexts to the question, each starting with a reference number like [[citation:x]], where x is a number. Please use the context and cite the context at the end of each sentence if applicable.
 
 Your answer must be correct, accurate and written by an expert using an unbiased and professional tone. Please limit to 1024 tokens. Do not give any information that is not related to the question, and do not repeat. Say "information is missing on" followed by the related topic, if the given context do not provide sufficient information.
 
@@ -470,7 +470,7 @@ async def get_related_questions(_app, query, contexts):
             logger.info("Using OpenAI model")
             openai_client = new_async_client(_app)
 
-            request_body = build_request_body(query, _more_questions_prompt)
+            request_body = _build_request_body(_app, query, _more_questions_prompt)
             try:
                 llm_response = await openai_client.chat.completions.create(
                     **request_body
